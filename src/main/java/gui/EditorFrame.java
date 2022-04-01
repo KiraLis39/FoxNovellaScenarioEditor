@@ -18,9 +18,11 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.rmi.registry.Registry;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.*;
@@ -822,20 +824,21 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
         if (scenario != null && lines != null) {
             config.setLastOpenPath(scenario);
 
-            try (FileOutputStream fos = new FileOutputStream(scenario.toFile());
-                 BufferedOutputStream bos = new BufferedOutputStream(fos)) {
+            try (FileOutputStream fos = new FileOutputStream(scenario.toFile(), false);
+                 BufferedOutputStream bos = new BufferedOutputStream(fos);
+                 OutputStreamWriter osw = new OutputStreamWriter(bos, Charset.forName("UTF-8"))) {
 
                 JIOM.dtoToFile(config);
                 saveCurrentLine();
 
                 for (String line : lines) {
-                    bos.write(line.getBytes());
-                    bos.write(System.lineSeparator().getBytes());
+                    osw.write(line);
+                    osw.write(System.lineSeparator());
                 }
-                bos.write("\n".getBytes());
+                osw.write("\n");
                 for (String line : answersArea.getText().split("\n")) {
-                    bos.write(line.getBytes());
-                    bos.write(System.lineSeparator().getBytes());
+                    osw.write(line);
+                    osw.write(System.lineSeparator());
                 }
                 return true;
             } catch (Exception e) {
