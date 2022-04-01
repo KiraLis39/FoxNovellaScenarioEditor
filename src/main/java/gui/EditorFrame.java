@@ -9,6 +9,7 @@ import utils.InputAction;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -23,6 +24,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class EditorFrame extends JFrame implements WindowListener, ActionListener {
     private final String scriptExtension = ".dingo";
@@ -34,10 +36,10 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
     private JTextArea textArea, answersArea;
     private JLabel lineCountLabel;
     private int lineIndex;
-    private Font f0 = FoxFontBuilder.setFoxFont(FoxFontBuilder.FONT.BAHNSCHRIFT, 20, false);
-    private Font f1 = FoxFontBuilder.setFoxFont(FoxFontBuilder.FONT.SEGOE_UI_SYMBOL, 20, true);;
+    private final Font f0 = FoxFontBuilder.setFoxFont(FoxFontBuilder.FONT.BAHNSCHRIFT, 20, false);
+    private final Font f1 = FoxFontBuilder.setFoxFont(FoxFontBuilder.FONT.SEGOE_UI_SYMBOL, 20, true);
     private static JToolBar toolBar;
-    private Color baseColor = new Color(0.05f, 0.05f, 0.055f, 1.0f);
+    private final Color baseColor = new Color(0.05f, 0.05f, 0.055f, 1.0f);
     private JComboBox<String> ownerBox, screenBox,
             backgBox, musicBox, soundBox, voiceBox,
             npcNameBox, npcTypeBox, npcMoodBox,
@@ -45,6 +47,8 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
     private JSpinner carmaSpinner;
     private JPanel answerBtnsPane, upOwnerPane, linesBtnsPane;
     private BufferedImage avatarImage;
+    private JScrollPane lineScrollPane;
+
 
     public EditorFrame() {
         setTitle("Novella scenario editor");
@@ -155,7 +159,7 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
             {
                 setBackground(baseColor);
 
-                 upOwnerPane = new JPanel() {
+                upOwnerPane = new JPanel() {
                     @Override
                     public void paintComponent(Graphics g) {
                         if (avatarImage != null) {
@@ -173,8 +177,15 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
 
                 linesBtnsPane = new JPanel(new GridLayout(0,1,0,0));
 
+                lineScrollPane = new JScrollPane(linesBtnsPane) {
+                    {
+                        setBorder(null);
+                        getVerticalScrollBar().setUnitIncrement(48);
+                    }
+                };
+
                 add(upOwnerPane, BorderLayout.NORTH);
-                add(linesBtnsPane, BorderLayout.EAST);
+                add(lineScrollPane, BorderLayout.CENTER);
             }
         };
 
@@ -202,7 +213,7 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
 
                                                 JLabel label = new JLabel("Owner:");
 
-                                                ownerBox = new JComboBox<>() {
+                                                ownerBox = new JComboBox<>(new DefaultComboBoxModel<>()) {
                                                     {
                                                         setMaximumRowCount(15);
                                                     }
@@ -218,7 +229,11 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
 
                                                 JLabel label = new JLabel("Screen:");
 
-                                                screenBox = new JComboBox<>(new DefaultComboBoxModel<>());
+                                                screenBox = new JComboBox<>(new DefaultComboBoxModel<>()) {
+                                                    {
+                                                        addActionListener(EditorFrame.this);
+                                                    }
+                                                };
 
                                                 add(label, BorderLayout.WEST);
                                                 add(screenBox, BorderLayout.CENTER);
@@ -351,12 +366,7 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
                                                     {
                                                         setOpaque(false);
 
-                                                        metaChapterBox = new JComboBox<>(new DefaultComboBoxModel<>()) {
-                                                            {
-                                                                setActionCommand("meta");
-                                                                addActionListener(EditorFrame.this);
-                                                            }
-                                                        };
+                                                        metaChapterBox = new JComboBox<>(new DefaultComboBoxModel<>());
                                                         metaNextDayBox = new JComboBox<>(new DefaultComboBoxModel<>());
 
                                                         add(metaChapterBox);
@@ -430,7 +440,7 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
                     }
                 };
 
-                JPanel downControlPane = new JPanel(new FlowLayout(0, 6, 0)) {
+                JPanel downControlPane = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0)) {
                     {
                         setBackground(baseColor);
                         setBorder(new EmptyBorder(1, 3, 1, 0));
@@ -485,14 +495,16 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
         setVisible(true);
 
         try {
-            config = JIOM.fileToDto(Paths.get("./config.dingo"), Configuration.class);
+            config = JIOM.fileToDto(Paths.get("./config" + scriptExtension) , Configuration.class);
             if (config.getLastOpenPath() != null) {
                 scenario = config.getLastOpenPath();
                 reloadScript();
             }
         } catch (Exception e) {
             e.printStackTrace();
-            JOptionPane.showConfirmDialog(this, "Ошибка загрузки конфигурации: " + e.getMessage(), "Ошибка:", JOptionPane.OK_OPTION);
+            JOptionPane.showConfirmDialog(this,
+                    "Ошибка загрузки конфигурации: " + e.getMessage(), "Ошибка:",
+                    JOptionPane.DEFAULT_OPTION);
         }
     }
 
@@ -598,9 +610,9 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
         String[] metaNpcMoodBox = {"-", "fear", "flirt", "fun", "sad", "shame", "simple", "sit", "udiv", "zlo", "cry", "die", "cum", "happy"};
         npcMoodBox.setModel(new DefaultComboBoxModel<>(metaNpcMoodBox));
 
-        String[] metaChapter = {"-", "chapter 01", "chapter 02", "chapter 03", "chapter 04", "chapter 05"};
+        String[] metaChapter = {"-", "Часть 01", "Часть 02", "Часть 03", "Часть 04", "Часть 05"};
         metaChapterBox.setModel(new DefaultComboBoxModel<>(metaChapter));
-        metaNextDayBox.setModel(new DefaultComboBoxModel<>(new String[]{"true", "false"}));
+        metaNextDayBox.setModel(new DefaultComboBoxModel<>(new String[]{"false", "true"}));
     }
 
     private void inAc() {
@@ -637,20 +649,38 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
 
         answerBtnsPane.removeAll();
         for (String answer : answers) {
-            answerBtnsPane.add(new JButton(answer.split("R ")[1].trim()) {{setName(answer.split("R ")[2].trim()); setActionCommand("goNext"); addActionListener(EditorFrame.this);}});
+            answerBtnsPane.add(
+                    new JButton(answer.split("R ")[1].trim()) {
+                        {
+                            setName(answer.split("R ")[2].trim());
+                            setActionCommand("goNext");
+                            addActionListener(EditorFrame.this);
+                        }
+                    });
         }
 
+        reloadBtnsLinePanel();
+
+        revalidate();
+    }
+
+    private void reloadBtnsLinePanel() {
         linesBtnsPane.removeAll();
         for (int i = 0; i < lines.size(); i++) {
             int index = i + 1;
             linesBtnsPane.add(new JButton("" + index) {{
                 setName("" + index);
 //                setPreferredSize(new Dimension(16,16));
+//                setSize(new Dimension(16,16));
                 setActionCommand("toLineQuick");
                 addActionListener(EditorFrame.this);
+                setBackground(Color.DARK_GRAY);
+                setForeground(Color.WHITE);
+                setFocusPainted(false);
             }});
         }
-        revalidate();
+        lineScrollPane.setPreferredSize(new Dimension(64, 32 * lines.size()));
+        lineScrollPane.revalidate();
     }
 
     private void setPage() {
@@ -661,8 +691,12 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
             answrs += answer + "\n";
         }
         answersArea.setText(answrs);
+        lightSelectedButton();
+
         try {
-            avatarImage = ImageIO.read(new File(config.getHeroAvatarsPath() + "/" + npcNameBox.getSelectedItem() + ".png"));
+            avatarImage = ImageIO.read(
+                    new File(config.getHeroAvatarsPath() + "/" + convertRusNamesToAvatarName((String) ownerBox.getSelectedItem()) + ".png")
+            );
         } catch (Exception e) {
             try {
                 avatarImage = ImageIO.read(new File(config.getHeroAvatarsPath() + "/noImage.png"));
@@ -671,6 +705,35 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
             }
         }
         upOwnerPane.repaint();
+    }
+
+    private Object convertRusNamesToAvatarName(String rusName) {
+        switch (rusName) {
+            case "Аня" -> {return "Ann";}
+            case "Дмитрий" -> {return "Dmitrii";}
+            case "Куро" -> {return "Kuro";}
+            case "Мари" -> {return "Mary";}
+            case "Мишка" -> {return "Mishka";}
+            case "Оксана" -> {return "Oksana";}
+            case "Олег" -> {return "Oleg";}
+            case "Ольга" -> {return "Olga";}
+            case "Лисса" -> {return "Lissa";}
+            default -> {return null;}
+        }
+    }
+
+    private void lightSelectedButton() {
+        for (Component component : linesBtnsPane.getComponents()) {
+            if (component instanceof JButton) {
+                if (Integer.parseInt(component.getName()) == lineIndex + 1) {
+                    component.setBackground(Color.GREEN);
+                    component.setForeground(Color.BLACK);
+                } else {
+                    component.setBackground(Color.DARK_GRAY);
+                    component.setForeground(Color.WHITE);
+                }
+            }
+        }
     }
 
     private void resetParams() {
@@ -690,7 +753,7 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
 
     private String parseLine(String toParse) {
         resetParams();
-        List<String> parsed = Arrays.stream(toParse.split(";")).map(s -> s.trim()).toList();
+        List<String> parsed = Arrays.stream(toParse.split(";")).map(String::trim).toList();
         String owner = parsed.get(0).split(":")[0];
         ownerBox.setSelectedItem(owner);
 
@@ -758,7 +821,9 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
                 JIOM.dtoToFile(config);
             } catch (IOException e) {
                 e.printStackTrace();
-                JOptionPane.showConfirmDialog(this, "Не удалось сохранить конфигурацию.", "Ошибка сохранения:", JOptionPane.PLAIN_MESSAGE);
+                JOptionPane.showConfirmDialog(this,
+                        "Не удалось сохранить конфигурацию.", "Ошибка сохранения:",
+                        JOptionPane.DEFAULT_OPTION);
             }
             saveCurrentLine();
             try (FileOutputStream fos = new FileOutputStream(scenario.toFile());
@@ -778,7 +843,9 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
             }
 
         } else {
-            JOptionPane.showConfirmDialog(this, "Сценарий не выбран!", "Ошибка сохранения:", JOptionPane.PLAIN_MESSAGE);
+            JOptionPane.showConfirmDialog(this,
+                    "Сценарий не выбран!", "Ошибка сохранения:",
+                    JOptionPane.DEFAULT_OPTION);
         }
 
         return false;
@@ -794,7 +861,7 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
         } else {
             int req = JOptionPane.showConfirmDialog(this,
                     "Файл не был сохранен. Все равно выйти?" , "Внимание!" ,
-                    JOptionPane.OK_OPTION, JOptionPane.QUESTION_MESSAGE);
+                    JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
             if (req == 0) {
                 System.exit(0);
             }
@@ -807,8 +874,71 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
     public void windowActivated(WindowEvent e) {}
     public void windowDeactivated(WindowEvent e) {}
 
+    private JFrame view;
+    private final int lifeTime = 3;
+
     @Override
     public void actionPerformed(ActionEvent e) {
+        if (e.getSource() instanceof JComboBox<?> && !screenBox.getSelectedItem().equals("-")) {
+            System.out.println("SSSS");
+
+            if (view != null && view.isVisible()) {
+                view.dispose();
+                view = null;
+            }
+
+            view = new JFrame() {
+                @Override
+                public void paint(Graphics g) {
+                    super.paint(g);
+
+                    try {
+                        g.drawImage(ImageIO.read(new File(config.getScreensPath() + "/" + screenBox.getSelectedItem() + ".png")),
+                                0,0,
+                                getWidth(),getHeight(),
+                                this);
+                    } catch (Exception ignore) {
+                    }
+                }
+
+                {
+                    setFocusable(false);
+                    setAutoRequestFocus(false);
+                    setUndecorated(true);
+                    setPreferredSize(new Dimension(450, 400));
+                    pack();
+                    setLocation(screenBox.getLocationOnScreen().x + screenBox.getBounds().width, screenBox.getLocationOnScreen().y);
+
+                    addWindowListener(new WindowAdapter() {
+                        Timer timer;
+                        @Override
+                        public void windowOpened(WindowEvent e) {
+                            AtomicInteger time = new AtomicInteger(lifeTime);
+                            timer = new Timer(1000, e1 -> {
+                                time.getAndDecrement();
+                                if (time.get() == 0) {
+                                    timer.stop();
+                                    dispose();
+                                }
+                            });
+                            timer.start();
+                        }
+
+                        @Override
+                        public void windowClosing(WindowEvent e) {
+                            if (timer != null && timer.isRunning()) {
+                                timer.stop();
+                                dispose();
+                            }
+                        }
+                    });
+                }
+            };
+            view.setVisible(true);
+
+            return;
+        }
+
         switch (e.getActionCommand()) {
             case "next" -> {
                 saveCurrentLine();
@@ -842,48 +972,57 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
                     }
                 }
             }
-            case "save" -> {
-                saveAll();
-            }
-            case "meta" -> {
-                if (metaChapterBox.getSelectedItem().equals("-")) {
-                    metaNextDayBox.setSelectedIndex(0);
-                }
-            }
+            case "save" -> saveAll();
+//            case "meta" -> {
+//                if (metaChapterBox.getSelectedItem().equals("-")) {
+//                    metaNextDayBox.setSelectedIndex(0);
+//                }
+//            }
             case "npc" -> {
                 if (npcNameBox.getSelectedItem().equals("-")) {
                     npcTypeBox.setSelectedIndex(0);
                     npcMoodBox.setSelectedIndex(0);
                 }
             }
-            case "resetLine" -> {
-                setPage();
-            }
+            case "resetLine" -> setPage();
             case "addLine" -> {
                 lineIndex++;
                 lines.add(lineIndex, "<new line>");
                 setPage();
                 saveCurrentLine();
+                reloadBtnsLinePanel();
             }
             case "removeLine" -> {
                 if (lines.size() > 1) {
                     lines.remove(lineIndex);
                     setPage();
+                    reloadBtnsLinePanel();
                 } else {
-                    JOptionPane.showConfirmDialog(this, "Это единственная строка", "Запрещено:", JOptionPane.PLAIN_MESSAGE);
+                    JOptionPane.showConfirmDialog(this,
+                            "Это единственная строка", "Запрещено:",
+                            JOptionPane.DEFAULT_OPTION);
                 }
             }
             case "goNext" -> {
                 try {
+                    saveAll();
                     String nextScriptName = ((JButton) e.getSource()).getName().replace("\"", "");
-                    scenario = Paths.get(config.getLastOpenPath().getParent() + "/" + nextScriptName + ".dingo");
-                    reloadScript();
+                    if (Files.exists(Paths.get(config.getSciptsPath() + "\\" + nextScriptName + scriptExtension))) {
+                        scenario = Paths.get(config.getSciptsPath() + "\\" + nextScriptName + scriptExtension);
+                        reloadScript();
+                    } else {
+                        JOptionPane.showConfirmDialog(this,
+                                "Проверь адрес скрипта. Не обнаружен скрипт " + (config.getSciptsPath() + "\\" + nextScriptName + scriptExtension),
+                                "Не найдено:", JOptionPane.DEFAULT_OPTION);
+                    }
                 } catch (IOException ex) {
                     ex.printStackTrace();
                 }
             }
             case "toLineQuick" -> {
-
+                saveCurrentLine();
+                lineIndex = Integer.parseInt(((JButton) e.getSource()).getName()) - 1;
+                setPage();
             }
             default -> {}
         }

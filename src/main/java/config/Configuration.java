@@ -17,7 +17,8 @@ public class Configuration implements JConfigurable {
     private Path soundPath;
     private Path voicePath;
     private Path npcPath;
-    private Path heroAvatarsPath = Paths.get("D:\\JavaProj\\MyWorkspace\\Dejavu_2019\\resources\\pictures\\npc");
+    private Path sciptsPath;
+    private Path heroAvatarsPath;
 
     @Override
     public void setSource(Path path) {
