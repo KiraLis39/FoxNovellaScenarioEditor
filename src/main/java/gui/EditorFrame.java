@@ -498,7 +498,11 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
             config = JIOM.fileToDto(Paths.get("./config" + scriptExtension) , Configuration.class);
             if (config.getLastOpenPath() != null) {
                 scenario = config.getLastOpenPath();
-                reloadScript();
+                if (Files.exists(scenario)) {
+                    reloadScript();
+                } else {
+                    throw new Exception("Script not exists: " + scenario);
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -815,19 +819,15 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
     }
 
     private boolean saveAll() {
-        if (scenario != null) {
-            try {
-                config.setLastOpenPath(scenario);
-                JIOM.dtoToFile(config);
-            } catch (IOException e) {
-                e.printStackTrace();
-                JOptionPane.showConfirmDialog(this,
-                        "Не удалось сохранить конфигурацию.", "Ошибка сохранения:",
-                        JOptionPane.DEFAULT_OPTION);
-            }
-            saveCurrentLine();
+        if (scenario != null && lines != null) {
+            config.setLastOpenPath(scenario);
+
             try (FileOutputStream fos = new FileOutputStream(scenario.toFile());
                  BufferedOutputStream bos = new BufferedOutputStream(fos)) {
+
+                JIOM.dtoToFile(config);
+                saveCurrentLine();
+
                 for (String line : lines) {
                     bos.write(line.getBytes());
                     bos.write(System.lineSeparator().getBytes());
@@ -840,15 +840,17 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
                 return true;
             } catch (Exception e) {
                 e.printStackTrace();
+                JOptionPane.showConfirmDialog(this,
+                        "Не удалось сохранить конфигурацию.", "Ошибка сохранения:",
+                        JOptionPane.DEFAULT_OPTION);
+                return false;
             }
-
         } else {
             JOptionPane.showConfirmDialog(this,
                     "Сценарий не выбран!", "Ошибка сохранения:",
                     JOptionPane.DEFAULT_OPTION);
+            return false;
         }
-
-        return false;
     }
 
     @Override
