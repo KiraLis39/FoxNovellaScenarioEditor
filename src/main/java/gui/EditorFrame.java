@@ -34,7 +34,7 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
     private JFileChooser fch;
     private Path scenario;
     private LinkedList<String> lines;
-    private LinkedList<String> answers;
+    private LinkedList<String> answers, nfList;
     private JTextArea textArea, answersArea;
     private JLabel lineCountLabel;
     private int lineIndex;
@@ -647,8 +647,9 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
 
     private void reloadScript() throws IOException {
         buildComboBoxes();
-        lines = new LinkedList<>(Files.readAllLines(scenario).stream().filter(s -> !s.isBlank() && !s.startsWith("var ")).toList());
+        lines = new LinkedList<>(Files.readAllLines(scenario).stream().filter(s -> !s.isBlank() && !s.startsWith("var ") && !s.startsWith("nf ")).toList());
         answers = new LinkedList<>(Files.readAllLines(scenario).stream().filter(s -> !s.isBlank() && s.startsWith("var ")).toList());
+        nfList = new LinkedList<>(Files.readAllLines(scenario).stream().filter(s -> !s.isBlank() && s.startsWith("nf ")).toList());
         setTitle("Novella scenario editor [" + (scenario == null ? "NA" : scenario.getFileName()) + "]");
         lineIndex = 0;
         setPage();
@@ -659,6 +660,16 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
                     new JButton(answer.split("R ")[1].trim()) {
                         {
                             setName(answer.split("R ")[2].trim());
+                            setActionCommand("goNext");
+                            addActionListener(EditorFrame.this);
+                        }
+                    });
+        }
+        for (String nfile : nfList) {
+            answerBtnsPane.add(
+                    new JButton(nfile.replace("nf", "").trim()) {
+                        {
+                            setName(nfile.replace("nf", "").trim());
                             setActionCommand("goNext");
                             addActionListener(EditorFrame.this);
                         }
@@ -880,13 +891,11 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
     public void windowDeactivated(WindowEvent e) {}
 
     private JFrame view;
-    private final int lifeTime = 3;
+    private final int lifeTime = 2;
 
     @Override
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() instanceof JComboBox<?> && !screenBox.getSelectedItem().equals("-")) {
-            System.out.println("SSSS");
-
             if (view != null && view.isVisible()) {
                 view.dispose();
                 view = null;
