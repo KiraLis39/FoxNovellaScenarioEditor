@@ -121,7 +121,7 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
                 JButton resetBtn = new JButton("\uD83D\uDD04") {
                     {
                         setFocusPainted(false);
-                        setToolTipText("Сбросить эту строку");
+                        setToolTipText("Сбросить строку");
                         setFont(f1);
                         setActionCommand("resetLine");
                         setForeground(Color.YELLOW);
@@ -656,6 +656,12 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
         lineIndex = 0;
         setPage();
 
+        reloadAnswersBtns();
+        reloadBtnsLinePanel();
+        revalidate();
+    }
+
+    private void reloadAnswersBtns() {
         answerBtnsPane.removeAll();
         for (String answer : answers) {
             answerBtnsPane.add(
@@ -677,10 +683,6 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
                         }
                     });
         }
-
-        reloadBtnsLinePanel();
-
-        revalidate();
     }
 
     private void reloadBtnsLinePanel() {
@@ -1005,7 +1007,11 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
                     npcMoodBox.setSelectedIndex(0);
                 }
             }
-            case "resetLine" -> setPage();
+            case "resetLine" -> {
+                setPage();
+                reloadBtnsLinePanel();
+                reloadAnswersBtns();
+            }
             case "addLine" -> {
                 lineIndex++;
                 lines.add(lineIndex, "<new line>");
