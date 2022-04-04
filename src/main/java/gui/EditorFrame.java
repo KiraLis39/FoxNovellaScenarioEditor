@@ -651,7 +651,10 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
         buildComboBoxes();
         lines = new LinkedList<>(Files.readAllLines(scenario).stream().filter(s -> !s.isBlank() && !s.startsWith("var ") && !s.startsWith("nf ")).toList());
         answers = new LinkedList<>(Files.readAllLines(scenario).stream().filter(s -> !s.isBlank() && s.startsWith("var ")).toList());
-        nfLink = new ArrayList<>(Files.readAllLines(scenario).stream().filter(s -> !s.isBlank() && s.startsWith("nf ")).toList()).get(0);
+        Optional<String> nfLinkTest = Files.readAllLines(scenario).stream().filter(s -> !s.isBlank() && s.startsWith("nf ")).findAny();
+        if (nfLinkTest.isPresent()) {
+            nfLink = nfLinkTest.get();
+        }
         setTitle("Novella scenario editor [" + (scenario == null ? "NA" : scenario.getFileName()) + "]");
         lineIndex = 0;
         setPage();
