@@ -519,7 +519,7 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
         List<Path> result;
         ArrayList<String> data = new ArrayList<>();
 
-        try (Scanner scanner = new Scanner(Paths.get("./heroNamesList.txt"))) {
+        try (Scanner scanner = new Scanner(Paths.get("./heroNamesList.txt"), "UTF-8")) {
             while (scanner.hasNextLine()) {
                 data.add(scanner.nextLine());
             }
