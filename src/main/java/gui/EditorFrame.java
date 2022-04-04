@@ -651,6 +651,7 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
         buildComboBoxes();
         lines = new LinkedList<>(Files.readAllLines(scenario).stream().filter(s -> !s.isBlank() && !s.startsWith("var ") && !s.startsWith("nf ")).toList());
         answers = new LinkedList<>(Files.readAllLines(scenario).stream().filter(s -> !s.isBlank() && s.startsWith("var ")).toList());
+        nfLink = null;
         Optional<String> nfLinkTest = Files.readAllLines(scenario).stream().filter(s -> !s.isBlank() && s.startsWith("nf ")).findAny();
         if (nfLinkTest.isPresent()) {
             nfLink = nfLinkTest.get();
