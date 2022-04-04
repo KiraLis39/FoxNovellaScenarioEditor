@@ -19,6 +19,7 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -519,7 +520,7 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
         List<Path> result;
         ArrayList<String> data = new ArrayList<>();
 
-        try (Scanner scanner = new Scanner(Paths.get("./heroNamesList.txt"), "UTF-8")) {
+        try (Scanner scanner = new Scanner(Paths.get("./heroNamesList.txt"), StandardCharsets.UTF_8)) {
             while (scanner.hasNextLine()) {
                 data.add(scanner.nextLine());
             }
