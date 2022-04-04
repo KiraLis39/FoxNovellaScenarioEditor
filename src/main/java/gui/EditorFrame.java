@@ -34,7 +34,7 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
     private JFileChooser fch;
     private Path scenario;
     private LinkedList<String> lines;
-    private LinkedList<String> answers, nfList;
+    private LinkedList<String> answers;
     private JTextArea textArea, answersArea;
     private JLabel lineCountLabel;
     private int lineIndex;
@@ -50,6 +50,7 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
     private JPanel answerBtnsPane, upOwnerPane, linesBtnsPane;
     private BufferedImage avatarImage;
     private JScrollPane lineScrollPane;
+    private String nfLink;
 
 
     public EditorFrame() {
@@ -649,7 +650,7 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
         buildComboBoxes();
         lines = new LinkedList<>(Files.readAllLines(scenario).stream().filter(s -> !s.isBlank() && !s.startsWith("var ") && !s.startsWith("nf ")).toList());
         answers = new LinkedList<>(Files.readAllLines(scenario).stream().filter(s -> !s.isBlank() && s.startsWith("var ")).toList());
-        nfList = new LinkedList<>(Files.readAllLines(scenario).stream().filter(s -> !s.isBlank() && s.startsWith("nf ")).toList());
+        nfLink = new ArrayList<>(Files.readAllLines(scenario).stream().filter(s -> !s.isBlank() && s.startsWith("nf ")).toList()).get(0);
         setTitle("Novella scenario editor [" + (scenario == null ? "NA" : scenario.getFileName()) + "]");
         lineIndex = 0;
         setPage();
@@ -665,11 +666,11 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
                         }
                     });
         }
-        for (String nfile : nfList) {
+        if (nfLink != null) {
             answerBtnsPane.add(
-                    new JButton(nfile.replace("nf", "").trim()) {
+                    new JButton(nfLink.replace("nf ", "").trim()) {
                         {
-                            setName(nfile.replace("nf", "").trim());
+                            setName(nfLink.replace("nf ", "").trim());
                             setActionCommand("goNext");
                             addActionListener(EditorFrame.this);
                         }
@@ -813,6 +814,8 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
         if (lines != null && lines.size() > 0) {
             if (textArea.getText().startsWith("var ")) {
                 lines.set(lineIndex, textArea.getText());
+            } else if (textArea.getText().startsWith("nf ")) {
+                lines.set(lineIndex, textArea.getText());
             } else {
                 String restoredLine = "";
 
@@ -846,10 +849,13 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
                     osw.write(line);
                     osw.write(System.lineSeparator());
                 }
-                osw.write("\n");
+//                osw.write("\n");
                 for (String line : answersArea.getText().split("\n")) {
-                    osw.write(line);
                     osw.write(System.lineSeparator());
+                    osw.write(line);
+                }
+                if (nfLink != null) {
+                    osw.write(nfLink);
                 }
                 return true;
             } catch (Exception e) {
