@@ -862,7 +862,7 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
                     osw.write(line);
                 }
                 if (nfLink != null) {
-                    osw.write(nfLink);
+                    osw.write("nf " + nfLink);
                 }
                 return true;
             } catch (Exception e) {
