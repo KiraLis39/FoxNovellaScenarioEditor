@@ -654,7 +654,7 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
         nfLink = null;
         Optional<String> nfLinkTest = Files.readAllLines(scenario).stream().filter(s -> !s.isBlank() && s.startsWith("nf ")).findAny();
         if (nfLinkTest.isPresent()) {
-            nfLink = nfLinkTest.get();
+            nfLink = nfLinkTest.get().replace("nf ", "").trim();
         }
         setTitle("Novella scenario editor [" + (scenario == null ? "NA" : scenario.getFileName()) + "]");
         lineIndex = 0;
@@ -1043,7 +1043,7 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
                         reloadScript();
                     } else {
                         JOptionPane.showConfirmDialog(this,
-                                "Проверь адрес скрипта. Не обнаружен скрипт " + (config.getSciptsPath() + "\\" + nextScriptName + scriptExtension),
+                                "Проверь адрес скрипта.\nНе обнаружен скрипт " + (config.getSciptsPath() + "\\" + nextScriptName + scriptExtension),
                                 "Не найдено:", JOptionPane.DEFAULT_OPTION);
                     }
                 } catch (IOException ex) {
