@@ -709,6 +709,10 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
     }
 
     private void setPage() {
+        if (lineIndex >= lines.size() && lineIndex > 0) {
+            lineIndex--;
+        }
+
         lineCountLabel.setText("Строка " + (lineIndex + 1) + " из " + lines.size());
         textArea.setText(parseLine(lines.get(lineIndex)));
         String answrs = "";
