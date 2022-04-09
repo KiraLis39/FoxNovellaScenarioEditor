@@ -36,6 +36,7 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
     private Path scenario;
     private LinkedList<String> lines;
     private LinkedList<String> answers;
+//    private LinkedList<String> logics;
     private JTextArea textArea, answersArea;
     private JLabel lineCountLabel;
     private int lineIndex;
@@ -51,7 +52,7 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
     private JPanel answerBtnsPane, upOwnerPane, linesBtnsPane;
     private BufferedImage avatarImage;
     private JScrollPane lineScrollPane;
-    private String nfLink;
+    private String nfLink, logicsLink;
 
 
     public EditorFrame() {
@@ -649,22 +650,26 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
 
     private void reloadScript() throws IOException {
         buildComboBoxes();
-        lines = new LinkedList<>(Files.readAllLines(scenario).stream().filter(s -> !s.isBlank() && !s.startsWith("var ") && !s.startsWith("nf ")).toList());
+        lines = new LinkedList<>(Files.readAllLines(scenario).stream().filter(s -> !s.isBlank() && !s.startsWith("var ") && !s.startsWith("nf ") && !s.startsWith("logic")).toList());
         answers = new LinkedList<>(Files.readAllLines(scenario).stream().filter(s -> !s.isBlank() && s.startsWith("var ")).toList());
+//        logics = new LinkedList<>(Files.readAllLines(scenario).stream().filter(s -> !s.isBlank() && s.startsWith("logic")).toList());
+        logicsLink = Files.readAllLines(scenario).stream().filter(s -> !s.isBlank() && s.startsWith("logic")).findFirst().orElse(null);
+
         nfLink = null;
         Optional<String> nfLinkTest = Files.readAllLines(scenario).stream().filter(s -> !s.isBlank() && s.startsWith("nf ")).findAny();
         if (nfLinkTest.isPresent()) {
             nfLink = nfLinkTest.get().replace("nf ", "").trim();
         }
+
         setTitle("Novella scenario editor [" + (scenario == null ? "NA" : scenario.getFileName()) + "]");
         lineIndex = 0;
         setPage();
-
         reloadAnswersBtns();
         reloadBtnsLinePanel();
         revalidate();
     }
 
+    int index;
     private void reloadAnswersBtns() {
         answerBtnsPane.removeAll();
         for (String answer : answers) {
@@ -686,6 +691,22 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
                             addActionListener(EditorFrame.this);
                         }
                     });
+        }
+
+        if (logicsLink != null) {
+            String[] logics = logicsLink.split(" ");
+            for (String logic : logics) {
+                if (logic.startsWith("logic")) {continue;}
+                answerBtnsPane.add(
+                        new JButton(logic.split("=")[0].trim()) {
+                            {
+                                setName(logic.split("=")[1].trim());
+                                setActionCommand("goNext");
+                                addActionListener(EditorFrame.this);
+                            }
+                        });
+                index++;
+            }
         }
     }
 
@@ -815,6 +836,10 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
             if (datum.startsWith("carma")) {
                 carmaSpinner.setValue(Integer.parseInt(datum.split(":")[1]));
             }
+            if (datum.startsWith("logic")) {
+                logicsLink = datum;
+//                logics = new LinkedList<>(Arrays.stream(datum.split(" ")).skip(1).toList());
+            }
         }
 
         toParse = parsed.get(0).contains(":") ? parsed.get(0).split(":")[1].replace("\"", "") : parsed.get(0);
@@ -823,14 +848,13 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
 
     private void saveCurrentLine() {
         if (lines != null && lines.size() > 0) {
-            if (textArea.getText().startsWith("var ")) {
-                lines.set(lineIndex, textArea.getText());
-            } else if (textArea.getText().startsWith("nf ")) {
-                lines.set(lineIndex, textArea.getText());
+            String text = textArea.getText();
+            if (text.startsWith("var ") || text.startsWith("nf ") || text.startsWith("logic")) {
+                lines.set(lineIndex, text);
             } else {
                 String restoredLine = "";
 
-                restoredLine += ownerBox.getSelectedItem() + ":\"" + textArea.getText().replace("\n", "") + "\";";
+                restoredLine += ownerBox.getSelectedItem() + ":\"" + text.replace("\n", "") + "\";";
                 restoredLine += "screen:" + screenBox.getSelectedItem() + ";";
                 restoredLine += "backg:" + backgBox.getSelectedItem() + ";";
                 restoredLine += "music:" + musicBox.getSelectedItem() + ";";
@@ -860,13 +884,15 @@ public class EditorFrame extends JFrame implements WindowListener, ActionListene
                     osw.write(line);
                     osw.write(System.lineSeparator());
                 }
-//                osw.write("\n");
                 for (String line : answersArea.getText().split("\n")) {
                     osw.write(System.lineSeparator());
                     osw.write(line);
                 }
                 if (nfLink != null) {
                     osw.write("nf " + nfLink);
+                }
+                if (logicsLink != null) {
+                    osw.write(logicsLink);
                 }
                 return true;
             } catch (Exception e) {
